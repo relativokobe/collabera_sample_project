@@ -1,0 +1,45 @@
+version: '2'
+services:
+  zookeeper:
+    image: wurstmeister/zookeeper
+    ports:
+    - "2181:2181"
+  kafka:
+    image: wurstmeister/kafka
+    ports:
+    - "9092:9092"
+    links:
+      - zookeeper
+    environment:
+      KAFKA_ADVERTISED_HOST_NAME: 172.25.0.4
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_CREATE_TOPICS: "Logs:1:1"
+      KAFKA_ADVERTISED_PORT: 9092
+      HOSTNAME_COMMAND: "route -n | awk '/UG[ \t]/{print $$2}'"
+  products_microservice:
+    image: products_image
+    ports:
+      - "8086:8086"
+    depends_on:
+      - "kafka"
+      - "zookeeper"
+    links:
+      - "kafka"
+  logger_microservice:
+    image: logger_image
+    ports:
+      - "8080:8080"
+    depends_on:
+      - "kafka"
+      - "zookeeper"
+    links:
+      - "kafka"
+  mysql-standalonesarah:
+    image: mysql
+    environment:
+       MYSQL_ROOT_PASSWORD: password
+       MYSQL_DATABASE: collabera
+       MYSQL_USER: kobe
+       MYSQL_PASSWORD: password
+    ports:
+    - "3306:3306"
